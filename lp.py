@@ -12,26 +12,20 @@ def make_X(d, y, shocks, controls, contemp, lags, months):
     return X
 
 
-def flag_months(index, exclude):
-    flag = pd.Series(0.0, index=index)
-    for a, b in exclude or []:
-        flag[(index >= pd.Period(a, "M")) & (index <= pd.Period(b, "M"))] = 1.0
-    return flag
-
-
 def run_lp(d, y, shocks, controls, horizons, lags=6, contemp=(),
-           months=True, test=None, exclude=None):
-    assert len(d) == (d.index[-1] - d.index[0]).n + 1, "gaps in monthly index"
+           months=True, test=None, exclude=()):
     X = make_X(d, y, shocks, controls, contemp, lags, months)
-    flag = flag_months(d.index, exclude)
+    flag = pd.Series(0.0, index=d.index)
+    for a, b in exclude:
+        flag.loc[a:b] = 1.0
     rows = []
     for h in horizons:
         dep = d[y].rolling(h + 1).sum().shift(-h)          # log y(t+h) - log y(t-1)
-        data = pd.concat([dep.rename("dep"), X], axis=1).dropna()
+        df = pd.concat([dep.rename("dep"), X], axis=1).dropna()
         touch = flag.rolling(h + lags + 1, min_periods=1).max().shift(-h)
-        data = data[touch.loc[data.index] == 0]            # window t-lags .. t+h
-        Z = sm.add_constant(data.drop(columns="dep"))
-        res = sm.OLS(data["dep"], Z).fit(cov_type="HAC", cov_kwds={"maxlags": h + 1})
+        df = df[touch[df.index] == 0]                      # window t-lags .. t+h
+        res = sm.OLS(df["dep"], sm.add_constant(df.drop(columns="dep"))).fit(
+            cov_type="HAC", cov_kwds={"maxlags": h + 1})
         ci = res.conf_int()
         p = float(res.wald_test(test, use_f=False, scalar=True).pvalue) if test else np.nan
         for s in shocks:

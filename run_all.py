@@ -12,8 +12,8 @@ adf_table(lv, d).to_csv(OUT / "adf.csv")
 CTRL = ["core", "wage", "dspi"]
 
 
-def lp(y="fafh", controls=CTRL, shocks=("diesel",), **kw):
-    return run_lp(d, y, list(shocks), controls, HORIZONS, contemp=["dspi"], **kw)
+def lp(y="fafh", controls=CTRL, shocks=("diesel",), horizons=HORIZONS, **kw):
+    return run_lp(d, y, list(shocks), controls, horizons, contemp=["dspi"], **kw)
 
 
 def asym(**kw):
@@ -37,11 +37,7 @@ variants = {
 
 rows = []
 for name, kw in variants.items():
-    sym, asy = lp(**kw), asym(**kw)
-    r = {"variant": name}
-    for h in (12, 24):
-        r[f"coef_h{h}"] = sym.query("h == @h").coef.iloc[0]
-        r[f"wald_p_h{h}"] = asy.query("h == @h").wald_p.iloc[0]
-        r[f"n_h{h}"] = sym.query("h == @h").n.iloc[0]
-    rows.append(r)
-pd.DataFrame(rows).round(3).to_csv(OUT / "robustness.csv", index=False)
+    s = lp(horizons=(12, 24), **kw)
+    a = asym(horizons=(12, 24), **kw).query("shock == 'up'")
+    rows.append(s.assign(variant=name, wald_p=a.wald_p.values)[["variant", "h", "coef", "se", "wald_p", "n"]])
+pd.concat(rows).round(3).to_csv(OUT / "robustness.csv", index=False)

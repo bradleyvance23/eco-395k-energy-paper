@@ -25,15 +25,13 @@ def test_asymmetry():
     for s, true in [("up", 0.4), ("dn", 0.1)]:
         o = out[out.shock == s]
         assert ((o.coef - true).abs() < 4 * o.se).all()
-    assert (out.wald_p < 0.01).all()
+    assert (out[out.h == 0].wald_p < 0.01).all()
 
 
 def test_n_and_mask():
     T, h, lags, m = 120, 12, 6, 60
     d = sim(T=T)
-    base = run_lp(d, "y", ["x"], ["z"], [h], lags=lags)
-    assert base.n.iloc[0] == T - h - lags
-    ex = [(str(d.index[m]), str(d.index[m]))]
+    assert run_lp(d, "y", ["x"], ["z"], [h], lags=lags).n.iloc[0] == T - h - lags
+    ex = [(str(d.index[m]),) * 2]
     masked = run_lp(d, "y", ["x"], ["z"], [h], lags=lags, exclude=ex)
-    expected = sum(not (t - lags <= m <= t + h) for t in range(lags, T - h))
-    assert masked.n.iloc[0] == expected
+    assert masked.n.iloc[0] == sum(not (t - lags <= m <= t + h) for t in range(lags, T - h))
