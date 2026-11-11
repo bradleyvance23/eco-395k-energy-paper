@@ -13,7 +13,9 @@ SERIES = {
     "dspi": "DSPIC96",
     "ppi_food": "WPUID61111",
     "wage_all": "CES0500000003",
+    "brent": "POILBREUSDM",
+    "fah": "CUSR0000SAF11"
 }
-GAPPED = ["fafh", "core"]
+GAPPED = ["fafh", "core", "fah"]
 COVID = [("2020-03", "2021-12")]
 OCT25 = [("2025-10", "2025-10")]

@@ -41,3 +41,13 @@ for name, kw in variants.items():
     a = asym(horizons=(12, 24), **kw).query("shock == 'up'")
     rows.append(s.assign(variant=name, wald_p=a.wald_p.values)[["variant", "h", "coef", "se", "wald_p", "n"]])
 pd.concat(rows).round(3).to_csv(OUT / "robustness.csv", index=False)
+
+rows = []
+for y in ["fafh", "ppi_food", "fah"]:
+    for name, kw in {"baseline": {}, "drop 2020-21": dict(exclude=COVID)}.items():
+        rows.append(lp(y, horizons=(12, 24), **kw).assign(outcome=y, variant=name))
+cols = ["outcome", "variant", "h", "coef", "se", "lo", "hi", "n"]
+pd.concat(rows)[cols].round(3).to_csv(OUT / "upstream_robust.csv", index=False)
+
+lp("fah").to_csv(OUT / "fah.csv", index=False)
+run_lp(d, "diesel", ["brent"], [], HORIZONS).to_csv(OUT / "crude_diesel.csv", index=False)
